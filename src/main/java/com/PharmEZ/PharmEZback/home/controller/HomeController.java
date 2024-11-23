@@ -2,10 +2,14 @@ package com.PharmEZ.PharmEZback.home.controller;
 
 import com.PharmEZ.PharmEZback.medicine.entity.Medicine;
 import com.PharmEZ.PharmEZback.medicine.repository.MedicineRepository;
+import com.PharmEZ.PharmEZback.pharmacy.entity.Pharmacy;
+import com.PharmEZ.PharmEZback.pharmacy.repository.PharmacyRepository;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLEncoder;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -15,11 +19,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * api 데이터 로딩
  *
- *
+ * @author sylee
  */
 @Controller
 @RequestMapping("/api")
@@ -27,13 +35,16 @@ public class HomeController {
 
     private final MedicineRepository medicineRepository;
 
-    public HomeController(MedicineRepository medicineRepository) {
+    private final PharmacyRepository pharmacyRepository;
+
+    public HomeController(MedicineRepository medicineRepository, PharmacyRepository pharmacyRepository) {
         this.medicineRepository = medicineRepository;
+        this.pharmacyRepository = pharmacyRepository;
     }
 
     @GetMapping("")
     public String home() {
-        return "medicine_home";
+        return "home";
     }
 
     @PostMapping("")
@@ -83,5 +94,107 @@ public class HomeController {
             e.printStackTrace();
         }
         return "redirect:/api"; // 폼 제출 후 리다이렉션
+    }
+
+    /**
+     * xml 태그를 추출하기 위한 메소드
+     *
+     * author @sylee
+     **/
+    public static String getTagValue(String tag, Element eElement){
+        String result = " ";
+        try {
+            NodeList nodeList = eElement.getElementsByTagName(tag).item(0).getChildNodes();
+            result = nodeList.item(0).getTextContent();
+//        System.out.println(result);
+            return result;
+        }
+        catch (Exception e){
+            return null;
+        }
+    }
+
+    @PostMapping("/pharmacy")
+    public String pharmacySave(@RequestParam("numOfRows") String numOfRows, Model model) {
+        try {
+            // URL 생성
+            String apiKey = URLEncoder.encode("bxIEfobo/fivORnHnRmrhawXwYMeO4idG1G2w+P/e6GCo4p6e46YKeRxUoGO7u7lWt2zc2KWODYNAPEZ8LvJDQ==","UTF-8");
+            String requestUrl = "https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyFullDown"
+                    + "?serviceKey=" + apiKey
+                    + "&numOfRows=" + numOfRows;
+
+            System.out.println("Request URL: " + requestUrl);
+
+            // XML 파싱
+            URL url = new URL(requestUrl);
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(url.openStream());
+
+            // 루트 엘리먼트 확인
+            doc.getDocumentElement().normalize();
+            System.out.println("Root element: " + doc.getDocumentElement().getNodeName());
+
+            // items 태그 접근
+            NodeList itemsList = doc.getElementsByTagName("items");
+            if (itemsList.getLength() > 0) {
+                Node itemsNode = itemsList.item(0); // 첫 번째 <items> 태그
+                if (itemsNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Element itemsElement = (Element) itemsNode;
+
+                    // 하위 item 태그 접근
+                    NodeList pharmacyItems = itemsElement.getElementsByTagName("item");
+                    System.out.println("Pharmacy items count: " + pharmacyItems.getLength());
+
+                    for (int i = 0; i < pharmacyItems.getLength(); i++) {
+                        Node nNode = pharmacyItems.item(i);
+                        if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                            Element eElement = (Element) nNode;
+
+                            Long id = Long.parseLong(getTagValue("rnum", eElement));
+                            Integer frontZipCode = Integer.parseInt(getTagValue("postCdn1", eElement).trim());
+                            Integer backZipCode = Integer.parseInt(getTagValue("postCdn2", eElement).trim());
+                            Double latitude = Double.parseDouble(getTagValue("wgs84Lat", eElement));
+                            Double longitude = Double.parseDouble(getTagValue("wgs84Lon", eElement));
+
+                            Pharmacy newPharmacy = new Pharmacy(
+                                    id,
+                                    getTagValue("dutyAddr", eElement),
+                                    getTagValue("dutyName", eElement),
+                                    getTagValue("dutyTel1", eElement),
+                                    getTagValue("dutyTime1s", eElement),
+                                    getTagValue("dutyTime1c", eElement),
+                                    getTagValue("dutyTime2s", eElement),
+                                    getTagValue("dutyTime2c", eElement),
+                                    getTagValue("dutyTime3s", eElement),
+                                    getTagValue("dutyTime3c", eElement),
+                                    getTagValue("dutyTime4s", eElement),
+                                    getTagValue("dutyTime4c", eElement),
+                                    getTagValue("dutyTime5s", eElement),
+                                    getTagValue("dutyTime5c", eElement),
+                                    getTagValue("dutyTime6s", eElement),
+                                    getTagValue("dutyTime6c", eElement),
+                                    getTagValue("dutyTime7s", eElement),
+                                    getTagValue("dutyTime7c", eElement),
+                                    getTagValue("dutyTime8s", eElement),
+                                    getTagValue("dutyTime8c", eElement),
+                                    frontZipCode,
+                                    backZipCode,
+                                    latitude,
+                                    longitude
+                            );
+
+                            System.out.println("약국 객체: " + newPharmacy);
+                            pharmacyRepository.save(newPharmacy);
+                        }
+                    }
+                }
+            } else {
+                System.out.println("<items> 태그를 찾을 수 없습니다.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "redirect:/api";
     }
 }
