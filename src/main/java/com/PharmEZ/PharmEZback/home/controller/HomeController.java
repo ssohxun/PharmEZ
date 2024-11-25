@@ -14,11 +14,9 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -48,7 +46,7 @@ public class HomeController {
     }
 
     @PostMapping("")
-    public String medicineSave(@RequestParam("numOfRows") String numOfRows, @RequestParam int pageNo, Model model) {
+    public String medicineSave(String numOfRows, int pageNo) {
         String result = "";
 
         try {
@@ -124,79 +122,84 @@ public class HomeController {
     }
 
     @PostMapping("/pharmacy")
-    public String pharmacySave(@RequestParam("numOfRows") String numOfRows, Model model) {
+    public String pharmacySave(String numOfRows2, int pageNo2) {
         try {
+            int rowsPerPage = Math.min(Integer.parseInt(numOfRows2), 100);
             // URL 생성
             String apiKey = URLEncoder.encode("bxIEfobo/fivORnHnRmrhawXwYMeO4idG1G2w+P/e6GCo4p6e46YKeRxUoGO7u7lWt2zc2KWODYNAPEZ8LvJDQ==","UTF-8");
-            String requestUrl = "https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyFullDown"
-                    + "?serviceKey=" + apiKey
-                    + "&numOfRows=" + numOfRows;
+            for (int pageCount = 1; pageCount <= pageNo2; pageCount++) {
+                String requestUrl = "https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyFullDown"
+                        + "?serviceKey=" + apiKey
+                        + "&numOfRows=" + rowsPerPage
+                        + "&pageNo=" + pageCount;
 
-            System.out.println("Request URL: " + requestUrl);
+//            System.out.println("Request URL: " + requestUrl);
 
-            // XML 파싱
-            URL url = new URL(requestUrl);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.parse(url.openStream());
+                // XML 파싱
+                URL url = new URL(requestUrl);
+                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                Document doc = dBuilder.parse(url.openStream());
 
-            // items 태그 접근
-            NodeList itemsList = doc.getElementsByTagName("items");
-            if (itemsList.getLength() > 0) {
-                Node itemsNode = itemsList.item(0); // 첫 번째 <items> 태그
-                if (itemsNode.getNodeType() == Node.ELEMENT_NODE) {
-                    Element itemsElement = (Element) itemsNode;
+                // items 태그 접근
+                NodeList itemsList = doc.getElementsByTagName("items");
+                if (itemsList.getLength() > 0) {
+                    Node itemsNode = itemsList.item(0); // 첫 번째 <items> 태그
+                    if (itemsNode.getNodeType() == Node.ELEMENT_NODE) {
+                        Element itemsElement = (Element) itemsNode;
 
-                    // 하위 item 태그 접근
-                    NodeList pharmacyItems = itemsElement.getElementsByTagName("item");
-                    System.out.println("Pharmacy items count: " + pharmacyItems.getLength());
+                        // 하위 item 태그
+                        NodeList pharmacyItems = itemsElement.getElementsByTagName("item");
+                        System.out.println("Pharmacy items count: " + pharmacyItems.getLength());
 
-                    for (int i = 0; i < pharmacyItems.getLength(); i++) {
-                        Node nNode = pharmacyItems.item(i);
-                        if (nNode.getNodeType() == Node.ELEMENT_NODE) {
-                            Element eElement = (Element) nNode;
+                        for (int i = 0; i < pharmacyItems.getLength(); i++) {
+                            Node nNode = pharmacyItems.item(i);
+                            if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                                Element eElement = (Element) nNode;
 
-                            Long id = Long.parseLong(getTagValue("rnum", eElement));
-                            Integer frontZipCode = Integer.parseInt(getTagValue("postCdn1", eElement).trim());
-                            Integer backZipCode = Integer.parseInt(getTagValue("postCdn2", eElement).trim());
-                            Double latitude = Double.parseDouble(getTagValue("wgs84Lat", eElement));
-                            Double longitude = Double.parseDouble(getTagValue("wgs84Lon", eElement));
+                                Long id = Long.parseLong(getTagValue("rnum", eElement));
+                                Integer frontZipCode = Integer.parseInt(getTagValue("postCdn1", eElement).trim());
+                                Integer backZipCode = Integer.parseInt(getTagValue("postCdn2", eElement).trim());
+                                Double latitude = Double.parseDouble(getTagValue("wgs84Lat", eElement));
+                                Double longitude = Double.parseDouble(getTagValue("wgs84Lon", eElement));
 
-                            Pharmacy newPharmacy = new Pharmacy(
-                                    id,
-                                    getTagValue("dutyAddr", eElement),
-                                    getTagValue("dutyName", eElement),
-                                    getTagValue("dutyTel1", eElement),
-                                    getTagValue("dutyTime1s", eElement),
-                                    getTagValue("dutyTime1c", eElement),
-                                    getTagValue("dutyTime2s", eElement),
-                                    getTagValue("dutyTime2c", eElement),
-                                    getTagValue("dutyTime3s", eElement),
-                                    getTagValue("dutyTime3c", eElement),
-                                    getTagValue("dutyTime4s", eElement),
-                                    getTagValue("dutyTime4c", eElement),
-                                    getTagValue("dutyTime5s", eElement),
-                                    getTagValue("dutyTime5c", eElement),
-                                    getTagValue("dutyTime6s", eElement),
-                                    getTagValue("dutyTime6c", eElement),
-                                    getTagValue("dutyTime7s", eElement),
-                                    getTagValue("dutyTime7c", eElement),
-                                    getTagValue("dutyTime8s", eElement),
-                                    getTagValue("dutyTime8c", eElement),
-                                    frontZipCode,
-                                    backZipCode,
-                                    latitude,
-                                    longitude
-                            );
+                                Pharmacy newPharmacy = new Pharmacy(
+                                        id,
+                                        getTagValue("dutyAddr", eElement),
+                                        getTagValue("dutyName", eElement),
+                                        getTagValue("dutyTel1", eElement),
+                                        getTagValue("dutyTime1s", eElement),
+                                        getTagValue("dutyTime1c", eElement),
+                                        getTagValue("dutyTime2s", eElement),
+                                        getTagValue("dutyTime2c", eElement),
+                                        getTagValue("dutyTime3s", eElement),
+                                        getTagValue("dutyTime3c", eElement),
+                                        getTagValue("dutyTime4s", eElement),
+                                        getTagValue("dutyTime4c", eElement),
+                                        getTagValue("dutyTime5s", eElement),
+                                        getTagValue("dutyTime5c", eElement),
+                                        getTagValue("dutyTime6s", eElement),
+                                        getTagValue("dutyTime6c", eElement),
+                                        getTagValue("dutyTime7s", eElement),
+                                        getTagValue("dutyTime7c", eElement),
+                                        getTagValue("dutyTime8s", eElement),
+                                        getTagValue("dutyTime8c", eElement),
+                                        frontZipCode,
+                                        backZipCode,
+                                        latitude,
+                                        longitude
+                                );
 
-                            pharmacyRepository.save(newPharmacy);
+                                pharmacyRepository.save(newPharmacy);
+                            }
                         }
                     }
+                } else {
+                    System.out.println("item tag 없음.");
                 }
-            } else {
-                System.out.println("<items> 태그를 찾을 수 없습니다.");
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
         return "redirect:/api";
