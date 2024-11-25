@@ -66,6 +66,7 @@ public class HomeController {
                 BufferedReader bf = new BufferedReader(new InputStreamReader(new URL(requestUrl).openStream(), "UTF-8"));
                 result = bf.readLine();
 
+<<<<<<< HEAD
                 // JSON 파싱
                 JSONParser jsonParser = new JSONParser();
                 JSONObject jsonObject = (JSONObject) jsonParser.parse(result);
@@ -79,20 +80,28 @@ public class HomeController {
                             JSONObject tmp = (JSONObject) item;
                             Long itemSeq = tmp.get("itemSeq") != null ? Long.parseLong((String) tmp.get("itemSeq")) : null;
 
+                        if (itemSeq != null) {  // itemSeq가 null이 아니면 저장
+    
                             Medicine newMedicine = new Medicine(
-                                    itemSeq,
-                                    (String) tmp.get("entpName"),
-                                    (String) tmp.get("itemName"),
-                                    (String) tmp.get("efcyQesitm"),
-                                    (String) tmp.get("useMethodQesitm"),
-                                    (String) tmp.get("atpnWarnQesitm"),
-                                    (String) tmp.get("atpnQesitm"),
-                                    (String) tmp.get("intrcQesitm"),
-                                    (String) tmp.get("seQesitm"),
-                                    (String) tmp.get("depositMethodQesitm"),
-                                    (String) tmp.get("itemImage")
-                            );
-                             medicineRepository.save(newMedicine);
+                                        itemSeq,
+                                        (String) tmp.get("entpName"),
+                                        (String) tmp.get("itemName"),
+                                        (String) tmp.get("efcyQesitm"),
+                                        (String) tmp.get("useMethodQesitm"),
+                                        (String) tmp.get("atpnWarnQesitm"),
+                                        (String) tmp.get("atpnQesitm"),
+                                        (String) tmp.get("intrcQesitm"),
+                                        (String) tmp.get("seQesitm"),
+                                        (String) tmp.get("depositMethodQesitm"),
+                                        (String) tmp.get("itemImage")
+                                );
+                            // 중복 체크 후 저장
+                            if (!medicineRepository.existsById(itemSeq)) {
+                                     medicineRepository.save(newMedicine);
+                            } else {
+                                System.out.println("Medicine ID " + itemSeq + "는 이미 존재하기 때문에, 저장을 건너뜁니다.");
+                            }
+                        }
                         }
                     }
                 }
@@ -190,7 +199,12 @@ public class HomeController {
                                         longitude
                                 );
 
-                                pharmacyRepository.save(newPharmacy);
+                                // 중복 확인 후 저장 로직
+                                if (!pharmacyRepository.existsById(id)) {
+                                    pharmacyRepository.save(newPharmacy);
+                                } else {
+                                    System.out.println("Pharmacy ID " + id + "는 이미 존재하기 때문에, 저장을 건너뜁니다.");
+                                }
                             }
                         }
                     }
