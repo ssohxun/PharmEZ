@@ -131,10 +131,6 @@ public class HomeController {
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(url.openStream());
 
-            // 루트 엘리먼트 확인
-            doc.getDocumentElement().normalize();
-            System.out.println("Root element: " + doc.getDocumentElement().getNodeName());
-
             // items 태그 접근
             NodeList itemsList = doc.getElementsByTagName("items");
             if (itemsList.getLength() > 0) {
@@ -184,7 +180,6 @@ public class HomeController {
                                     longitude
                             );
 
-                            System.out.println("약국 객체: " + newPharmacy);
                             pharmacyRepository.save(newPharmacy);
                         }
                     }
