@@ -1,7 +1,7 @@
 CREATE TABLE medicine (
                           medicine_id BIGINT NOT NULL PRIMARY KEY,
                           pharmaceutical_company VARCHAR(255) NOT NULL, -- 제약사
-                          medicine_name VARCHAR(255) NOT NULL, -- 약 이름
+                          medicine_name LongText NOT NULL, -- 약 이름
                           medicine_efficacy LongText NULL, -- 효능
                           medicine_use LongText NULL, -- 사용법
                           precaution_warn LongText NULL, -- 경고 사항
@@ -15,7 +15,7 @@ CREATE TABLE medicine (
 CREATE TABLE pharmacy (
                           pharmacy_id BIGINT NOT NULL PRIMARY KEY,
                           pharmacy_address VARCHAR(255) NOT NULL, -- 주소
-                          pharmacy_name VARCHAR(255) NOT NULL, -- 약국 이름
+                          pharmacy_name  NOT NULL, -- 약국 이름
                           pharmacy_tel VARCHAR(20), -- 전화번호
                           mon_start VARCHAR(10), -- 월요일 시작 시간
                           mon_close VARCHAR(10), -- 월요일 종료 시간
