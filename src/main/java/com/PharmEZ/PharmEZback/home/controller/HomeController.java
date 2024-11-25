@@ -48,52 +48,62 @@ public class HomeController {
     }
 
     @PostMapping("")
-    public String medicineSave(@RequestParam("numOfRows") String numOfRows, Model model) {
+    public String medicineSave(@RequestParam("numOfRows") String numOfRows, @RequestParam int pageNo, Model model) {
         String result = "";
 
         try {
-            String requestNumOfRows = numOfRows;
-            String serviceKey = URLEncoder.encode("bxIEfobo/fivORnHnRmrhawXwYMeO4idG1G2w+P/e6GCo4p6e46YKeRxUoGO7u7lWt2zc2KWODYNAPEZ8LvJDQ==", "UTF-8");
-            URL url = new URL("https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList?" +
-                    "serviceKey=" + serviceKey +
-                    "&numOfRows=" + URLEncoder.encode(requestNumOfRows, "UTF-8") +
-                    "&type=json");
+            int rowsPerPage = Math.min(Integer.parseInt(numOfRows), 100); // 최대 100
+            String serviceKey = "bxIEfobo/fivORnHnRmrhawXwYMeO4idG1G2w+P/e6GCo4p6e46YKeRxUoGO7u7lWt2zc2KWODYNAPEZ8LvJDQ==";
 
-            BufferedReader bf = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-8"));
-            result = bf.readLine();
+            for (int pageCount = 1; pageCount <= pageNo; pageCount++) {
+                String requestUrl = "https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList"
+                        + "?serviceKey=" + URLEncoder.encode(serviceKey, "UTF-8")
+                        + "&numOfRows=" + rowsPerPage
+                        + "&pageNo=" + pageCount
+                        + "&type=json";
 
-            JSONParser jsonParser = new JSONParser();
-            JSONObject jsonObject = (JSONObject) jsonParser.parse(result);
-            JSONObject body = (JSONObject) jsonObject.get("body");
+//                System.out.println("Requesting URL: " + requestUrl);
 
-            if (body != null) {
-                JSONArray itemsArr = (JSONArray) body.get("items");
+                // API 요청 및 응답 처리
+                BufferedReader bf = new BufferedReader(new InputStreamReader(new URL(requestUrl).openStream(), "UTF-8"));
+                result = bf.readLine();
 
-                if (itemsArr != null) {
-                    for (Object item : itemsArr) {
-                        JSONObject tmp = (JSONObject) item;
-                        Long itemSeq = tmp.get("itemSeq") != null ? Long.parseLong((String) tmp.get("itemSeq")) : null;
-                        Medicine newMedicine = new Medicine(
-                                itemSeq,
-                                (String) tmp.get("entpName"),
-                                (String) tmp.get("itemName"),
-                                (String) tmp.get("efcyQesitm"),
-                                (String) tmp.get("useMethodQesitm"),
-                                (String) tmp.get("atpnWarnQesitm"),
-                                (String) tmp.get("atpnQesitm"),
-                                (String) tmp.get("intrcQesitm"),
-                                (String) tmp.get("seQesitm"),
-                                (String) tmp.get("depositMethodQesitm"),
-                                (String) tmp.get("itemImage")
-                        );
-                        medicineRepository.save(newMedicine);
+                // JSON 파싱
+                JSONParser jsonParser = new JSONParser();
+                JSONObject jsonObject = (JSONObject) jsonParser.parse(result);
+                JSONObject body = (JSONObject) jsonObject.get("body");
+
+                if (body != null) {
+                    JSONArray itemsArr = (JSONArray) body.get("items");
+
+                    if (itemsArr != null && !itemsArr.isEmpty()) {
+                        for (Object item : itemsArr) {
+                            JSONObject tmp = (JSONObject) item;
+                            Long itemSeq = tmp.get("itemSeq") != null ? Long.parseLong((String) tmp.get("itemSeq")) : null;
+
+                            Medicine newMedicine = new Medicine(
+                                    itemSeq,
+                                    (String) tmp.get("entpName"),
+                                    (String) tmp.get("itemName"),
+                                    (String) tmp.get("efcyQesitm"),
+                                    (String) tmp.get("useMethodQesitm"),
+                                    (String) tmp.get("atpnWarnQesitm"),
+                                    (String) tmp.get("atpnQesitm"),
+                                    (String) tmp.get("intrcQesitm"),
+                                    (String) tmp.get("seQesitm"),
+                                    (String) tmp.get("depositMethodQesitm"),
+                                    (String) tmp.get("itemImage")
+                            );
+//                            System.out.println("약 개체: " + newMedicine);
+                             medicineRepository.save(newMedicine);
+                        }
                     }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "redirect:/api"; // 폼 제출 후 리다이렉션
+        return "redirect:/api";
     }
 
     /**

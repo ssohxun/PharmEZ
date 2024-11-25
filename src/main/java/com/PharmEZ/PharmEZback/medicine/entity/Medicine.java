@@ -30,6 +30,7 @@ public class Medicine {
     @Column(name = "pharmaceutical_company", nullable = false)
     private String pharmaceuticalCompany;
 
+    @Lob
     @Column(name = "medicine_name", nullable = false)
     private String medicineName;
 
