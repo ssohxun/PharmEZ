@@ -94,7 +94,6 @@ public class HomeController {
                                     (String) tmp.get("depositMethodQesitm"),
                                     (String) tmp.get("itemImage")
                             );
-//                            System.out.println("약 개체: " + newMedicine);
                              medicineRepository.save(newMedicine);
                         }
                     }
